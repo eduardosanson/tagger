@@ -23,7 +23,7 @@ class Ir_send_callbacks : public BLECharacteristicCallbacks
     {
         const char *logtag = "BT";
 
-        std::string value = ir_send_char->getValue();
+        std::string value(ir_send_char->getValue().c_str());
 
         if (value.length() > 0)
         {
@@ -41,7 +41,7 @@ class Led_callbacks : public BLECharacteristicCallbacks
 {
     void onWrite(BLECharacteristic *ir_send_char)
     {
-        std::string value = ir_send_char->getValue();
+        std::string value(ir_send_char->getValue().c_str());
 
         for (int i = 0; i < value.length() / 4 && i / 4 < NUM_LEDS; i = i + 4)
         {
@@ -179,7 +179,7 @@ void init_ble()
 
     /* MAC address */
     BLEAddress mac_address = BLEDevice::getAddress();
-    std::string mac_str = mac_address.toString();
+    std::string mac_str(mac_address.toString().c_str());
     ESP_LOGI(logtag, "MAC address: %s", mac_str);
     return;
 }
