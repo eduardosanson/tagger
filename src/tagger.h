@@ -68,6 +68,7 @@
 #include <EEPROM.h>
 #include "IR32/src/IRSend.h"
 #include "IR32/src/IRRecv.h"
+#include "game.h"
 
 /* git version */
 #if __has_include("git_info.h")

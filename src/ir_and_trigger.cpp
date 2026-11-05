@@ -34,14 +34,30 @@ void handle_ir(void *parameter)
                     ir_receive_char->setValue(result);
                     ble_notify(ir_receive_char);
                 }
-                else if (result != ir_msg[team])
+                else
                 {
-                    ESP_LOGI(logtag, "message from other team");
-                    vTaskResume(xHandle_handle_player_status);
-                }
-                else if (result == ir_msg[team])
-                {
-                    ESP_LOGI(logtag, "message from own team, doing nothing");
+                    uint8_t t_rx = 0, p_rx = 0, d_rx = 0;
+                    if (!game_parse_payload(result, &t_rx, &p_rx, &d_rx))
+                    {
+                        ESP_LOGD(logtag, "codigo desconhecido: 0x%x", result);
+                    }
+                    else if (t_rx == team)
+                    {
+                        ESP_LOGI(logtag, "fogo amigo (time %u), ignorado", t_rx);
+                        game_flash_friendly();
+                    }
+                    else if (game_is_dead())
+                    {
+                        ESP_LOGI(logtag, "tiro recebido enquanto morto, ignorado");
+                    }
+                    else
+                    {
+                        ESP_LOGI(logtag, "ACERTO do time %u, jogador %u, dano %u", t_rx, p_rx, d_rx);
+                        if (game_take_hit(d_rx))
+                            vTaskResume(xHandle_handle_player_status);   // downtime de 3 s
+                        else
+                            vTaskResume(xHandle_handle_player_status);   // morreu: task dorme
+                    }
                 }
             }
         }
@@ -87,22 +103,40 @@ void refresh_trigger_status(void *parameter)
         //2: Team selection mode
         else if (team_selection && trigger.pressed)
         {
-            team++;
-            if (team >= 7)
-                team = 0;
-            ESP_LOGI(logtag, "increasing team. Team: %u", team);
-            leds[LED_INDEX_TEAM].setColorCode(color_team[team]);
-            FastLED.show();
+            team = (team + 1) % NUM_TEAMS;
+            ESP_LOGI(logtag, "trocando time. Time: %u", team);
+            game_show_team(team);
         }
-        //3: BT-less playing mode
+        //3: morto -> segurar o gatilho para voltar
+        else if (game_is_dead())
+        {
+            if (trigger.pressed)
+            {
+                uint32_t t0 = millis();
+                while (trigger.pressed && (millis() - t0) < RESPAWN_HOLD_MS)
+                {
+                    vTaskDelay(20 / portTICK_PERIOD_MS);
+                    trigger.read_pin();
+                }
+                if (!trigger.pressed && (millis() - t0) >= RESPAWN_HOLD_MS)
+                {
+                    ESP_LOGI(logtag, "respawn por gatilho segurado (%lu ms)", millis() - t0);
+                    game_respawn();
+                    vTaskResume(xHandle_handle_player_status);
+                }
+            }
+        }
+        //4: BT-less playing mode
         else if (trigger.pressed && player_is_on)
         {
-            leds[LED_INDEX_SHOOT].setColorCode(0xFFFFFF);
+            uint32_t payload = game_make_payload(team, game_player_id(), DAMAGE_PER_HIT);
+            ESP_LOGI(logtag, "disparo IR: 0x%08x (time %u, jogador %u)", payload, team, game_player_id());
+            ir_led.send(payload);
+            // flash curto de disparo na barra, sem apagar a barra de vida
+            for (int i = 0; i < NUM_LEDS; i++) leds[i].setColorCode(0xFFFFFF);
             FastLED.show();
-            ESP_LOGI(logtag, "Device not connected. Sending team message via IR: 0x%x", ir_msg[team]);
-            ir_led.send(ir_msg[team]);
-            leds[LED_INDEX_SHOOT].setColorCode(0);
-            FastLED.show();
+            vTaskDelay(40 / portTICK_PERIOD_MS);
+            game_show_life();
         }
         portENTER_CRITICAL_ISR(&mux);
         count_trigger_interrupts = 0;
@@ -115,15 +149,20 @@ void handle_player_status(void *parameter)
     ESP_LOGD(logtag, "handle player status task started");
     while (true)
     {
-        ESP_LOGI(logtag, "setting player status to active");
+        if (game_is_dead())
+        {
+            ESP_LOGI(logtag, "morto: aguardando respawn pelo gatilho");
+            player_is_on = false;
+            vTaskSuspend(NULL);   // só acorda em game_respawn()
+            continue;             // ao acordar, vida cheia -> volta a ativo
+        }
+        ESP_LOGI(logtag, "jogador ativo (vida %u)", game_life());
         player_is_on = true;
-        leds[LED_INDEX_PLAYER_STATUS].setColorCode(COLOR_PLAYER_STATUS_ON);
-        FastLED.show();
-        vTaskSuspend(NULL); //suspend task until reactivated by handle_ir()
-        ESP_LOGI(logtag, "setting player status to down");
+        game_show_life();
+        vTaskSuspend(NULL);   // acorda em handle_ir() quando leva um tiro
+        ESP_LOGI(logtag, "jogador em downtime");
         player_is_on = false;
-        leds[LED_INDEX_PLAYER_STATUS].setColorCode(COLOR_PLAYER_STATUS_OFF);
-        FastLED.show();
+        game_show_downtime();
         vTaskDelay(PLAYER_DOWNTIME_IN_MS / portTICK_PERIOD_MS);
     }
     return;

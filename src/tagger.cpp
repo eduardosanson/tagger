@@ -152,22 +152,23 @@ void setup()
         ir_led.start(IR_RMT_TX_GPIO_NUM, IR_PROTOCOL);
         //init trigger and ir handling
         create_tasks();
+        //carrega vida/time salvos e mostra a barra de vida
+        game_begin(&team);
+        game_show_life();
         ESP_LOGD(logtag, "Entering team selection mode");
         team_selection = true;
-        leds[LED_INDEX_TEAM].setColorCode(color_team[team]);
-        FastLED.show();
         while (millis() - last_time_button_pressed_timestamp < TEAM_SELECTION_TIME_IN_MS)
         {
-            //blink with bt status led while in team selection mode
-            leds[LED_INDEX_BT].setColorCode(0);
+            game_show_team(team);
+            vTaskDelay(250 / portTICK_PERIOD_MS);
+            for (int i = 0; i < NUM_LEDS; i++) leds[i].setColorCode(0x000000);
             FastLED.show();
-            vTaskDelay(200 / portTICK_PERIOD_MS);
-            leds[LED_INDEX_BT].setColorCode(COLOR_BT_CONNECTION_OFF);
-            FastLED.show();
-            vTaskDelay(200 / portTICK_PERIOD_MS);
+            vTaskDelay(250 / portTICK_PERIOD_MS);
         }
         ESP_LOGD(logtag, "Leaving team selection mode");
         team_selection = false;
+        game_save(team);
+        game_show_life();
         //blink for telling that setup is done
         ESP_LOGD(logtag, "Init finished: blink LED");
         led.blinks();
