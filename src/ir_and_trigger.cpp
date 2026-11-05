@@ -41,7 +41,7 @@ void handle_ir(void *parameter)
                     {
                         ESP_LOGD(logtag, "codigo desconhecido: 0x%x", result);
                     }
-                    else if (t_rx == team)
+                    else if ((t_rx == team) && !TEST_SELF_HIT)
                     {
                         ESP_LOGI(logtag, "fogo amigo (time %u), ignorado", t_rx);
                         game_flash_friendly();

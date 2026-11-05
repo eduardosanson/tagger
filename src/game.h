@@ -30,6 +30,13 @@
 #define HIT_FLASH_MS      60
 #define HIT_FLASH_TIMES   3
 
+/* Teste de bancada com UMA placa só: aceita o tiro do próprio time como dano.
+ * Deixe 0 em jogo normal; ligue para validar vida/morte/respawn apontando o
+ * LED IR para o TSOP da mesma placa. */
+#ifndef TEST_SELF_HIT
+#define TEST_SELF_HIT     0
+#endif
+
 /* As duas funções de payload são `static inline` de propósito: assim o teste
  * de host (test/test_payload.cpp) exercita exatamente o mesmo código que roda
  * no ESP32, sem duplicar a fórmula. */
