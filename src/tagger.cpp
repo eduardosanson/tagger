@@ -198,7 +198,7 @@ void create_tasks()
     xTaskCreate(
         handle_ir,         /* Task function. */
         "handle_ir",       /* name of task. */
-        2048,              /* Stack size of task */
+        4096,              /* Stack size of task (RMT5 precisa de mais pilha que o driver antigo) */
         NULL,              /* parameter of the task */
         1,                 /* priority of the task */
         &xHandle_handle_ir /* Task handle to keep track of created task */
@@ -207,7 +207,7 @@ void create_tasks()
     xTaskCreate(
         refresh_trigger_status,         /* Task function. */
         "refresh_trigger_status",       /* name of task. */
-        2048,                           /* Stack size of task */
+        4096,                           /* Stack size of task */
         NULL,                           /* parameter of the task */
         1,                              /* priority of the task */
         &xHandle_refresh_trigger_status /* Task handle to keep track of created task */
@@ -216,7 +216,7 @@ void create_tasks()
     xTaskCreate(
         send_latency,         /* Task function. */
         "send_latency",       /* name of task. */
-        2048,                 /* Stack size of task */
+        4096,                 /* Stack size of task */
         NULL,                 /* parameter of the task */
         1,                    /* priority of the task */
         &xHandle_send_latency /* Task handle to keep track of created task */
@@ -225,7 +225,7 @@ void create_tasks()
     xTaskCreate(
         handle_player_status,         /* Task function. */
         "handle_player_status",       /* name of task. */
-        2048,                         /* Stack size of task */
+        4096,                         /* Stack size of task */
         NULL,                         /* parameter of the task */
         1,                            /* priority of the task */
         &xHandle_handle_player_status /* Task handle to keep track of created task */

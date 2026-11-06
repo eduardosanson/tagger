@@ -21,7 +21,7 @@
 #define NUM_LEDS 4
 #define LED_OVERALL_BRIGHTNESS 20 //scale 0 to 255
 //FASTLED_ESP32_I2S is defined to tell FastLED to use I2S driver instead of RMT. Reference for this option in FastLED/platforms/esp/32/clockless_i2s_esp32.h. There is a conflict when using RMT with both LED and IR, although it should be possible according to the options in FastLED/platforms/esp/32/clockless_rmt_esp32.h. Maybe there is a connection to this issue: https://github.com/FastLED/FastLED/issues/835
-#define FASTLED_ESP32_I2S true
+// #define FASTLED_ESP32_I2S true   // driver I2S não existe mais no FastLED 3.9 / IDF 5: o RMT5 é o único caminho
 #define LED_INDEX_BT 0
 #define LED_INDEX_PLAYER_STATUS 1
 #define LED_INDEX_TEAM 2
@@ -62,7 +62,7 @@
 #include "misc.h"
 #include "ir_and_trigger.h"
 #include "ble.h"
-#include <FastLED.h>
+#include "leds_shim.h"   // WS2812 próprio no RMT5 (FastLED 3.9 não sobe neste core)
 #include <esp_log.h>
 #include "ota.h"
 #include <EEPROM.h>
